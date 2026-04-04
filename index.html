@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班级吐槽墙 💬</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+      background: #ededed;
+      min-height: 100vh;
+    }
+
+    /* ─── 登录页 ─── */
+    #login-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a73e8 0%, #6c47d9 100%);
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 360px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      text-align: center;
+    }
+    .login-card .logo { font-size: 56px; margin-bottom: 12px; }
+    .login-card h1 { font-size: 22px; color: #222; margin-bottom: 6px; }
+    .login-card p  { font-size: 13px; color: #999; margin-bottom: 28px; }
+    .login-card input {
+      width: 100%; padding: 13px 16px;
+      border: 1.5px solid #e0e0e0; border-radius: 10px;
+      font-size: 15px; outline: none; transition: border .2s;
+      margin-bottom: 16px;
+    }
+    .login-card input:focus { border-color: #1a73e8; }
+    .login-card button {
+      width: 100%; padding: 13px;
+      background: linear-gradient(90deg, #1a73e8, #6c47d9);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .login-card button:hover { opacity: .88; }
+    .login-tip { margin-top: 16px; font-size: 12px; color: rgba(255,255,255,.7); }
+
+    /* ─── 主界面 ─── */
+    #app-page { display: none; }
+
+    /* 顶部导航 */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; height: 56px;
+      border-bottom: 1px solid #eee;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+    }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #222; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .user-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: #f0f4ff; border-radius: 20px; padding: 4px 12px;
+      font-size: 13px; color: #1a73e8; font-weight: 600;
+    }
+    .user-chip .avatar-sm {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff;
+    }
+    .logout-btn {
+      background: none; border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 4px 10px; font-size: 12px; color: #999; cursor: pointer;
+      transition: all .2s;
+    }
+    .logout-btn:hover { border-color: #f44; color: #f44; }
+
+    /* 发帖框 */
+    .compose-area {
+      background: #fff; margin: 12px; border-radius: 14px;
+      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .compose-header { display: flex; align-items: flex-start; gap: 12px; }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .compose-body { flex: 1; }
+    .compose-body textarea {
+      width: 100%; border: none; outline: none; resize: none;
+      font-size: 15px; color: #333; background: transparent;
+      line-height: 1.6; min-height: 60px; font-family: inherit;
+    }
+    .compose-body textarea::placeholder { color: #bbb; }
+    .compose-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5;
+    }
+    .teacher-select {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .teacher-select label { font-size: 13px; color: #888; }
+    .teacher-select select {
+      border: 1.5px solid #e0e0e0; border-radius: 8px;
+      padding: 5px 10px; font-size: 13px; outline: none;
+      background: #fafafa; cursor: pointer;
+      transition: border .2s;
+    }
+    .teacher-select select:focus { border-color: #1a73e8; }
+    .add-teacher-btn {
+      background: none; border: 1.5px dashed #ccc; border-radius: 8px;
+      padding: 4px 10px; font-size: 12px; color: #aaa; cursor: pointer;
+      transition: all .2s;
+    }
+    .add-teacher-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+    .post-btn {
+      background: linear-gradient(90deg, #1a73e8, #6c47d9);
+      color: #fff; border: none; border-radius: 10px;
+      padding: 8px 22px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .post-btn:hover { opacity: .85; }
+    .post-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* 老师标签 */
+    .teacher-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #fff3e0; color: #e65100;
+      border-radius: 6px; padding: 2px 8px; font-size: 12px;
+      font-weight: 600; margin-right: 4px;
+    }
+
+    /* 帖子列表 */
+    .feed { padding: 0 12px 80px; }
+    .empty-hint {
+      text-align: center; padding: 60px 20px;
+      color: #bbb; font-size: 14px;
+    }
+    .empty-hint .big { font-size: 48px; margin-bottom: 12px; }
+
+    /* 单条帖子 */
+    .post-card {
+      background: #fff; border-radius: 14px; margin-bottom: 12px;
+      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      animation: fadeSlideIn .3s ease;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .post-header { display: flex; align-items: flex-start; gap: 12px; }
+    .post-meta { flex: 1; }
+    .post-name { font-size: 14px; font-weight: 700; color: #1a73e8; }
+    .post-time { font-size: 12px; color: #bbb; margin-top: 2px; }
+    .post-content {
+      font-size: 15px; color: #333; line-height: 1.7;
+      margin: 10px 0;
+    }
+    .post-footer {
+      display: flex; align-items: center; gap: 16px;
+      padding-top: 10px; border-top: 1px solid #f5f5f5;
+    }
+    .action-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; color: #999; transition: color .2s;
+      padding: 4px 0;
+    }
+    .action-btn:hover { color: #1a73e8; }
+    .action-btn.liked { color: #e91e63 !important; }
+    .action-btn .icon { font-size: 16px; }
+
+    /* 评论区 */
+    .comment-section { margin-top: 10px; display: none; }
+    .comment-section.open { display: block; }
+    .comment-list { margin-bottom: 8px; }
+    .comment-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid #fafafa;
+    }
+    .comment-item:last-child { border-bottom: none; }
+    .comment-item .avatar-xs {
+      width: 28px; height: 28px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .comment-item .c-body { flex: 1; }
+    .comment-item .c-name { font-size: 12px; font-weight: 700; color: #1a73e8; }
+    .comment-item .c-text { font-size: 13px; color: #444; margin-top: 2px; line-height: 1.5; }
+    .comment-item .c-time { font-size: 11px; color: #ccc; margin-top: 2px; }
+    .comment-input-row {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    .comment-input-row input {
+      flex: 1; border: 1.5px solid #eee; border-radius: 20px;
+      padding: 7px 14px; font-size: 13px; outline: none;
+      transition: border .2s; font-family: inherit;
+    }
+    .comment-input-row input:focus { border-color: #1a73e8; }
+    .comment-input-row button {
+      background: #1a73e8; color: #fff; border: none; border-radius: 20px;
+      padding: 7px 16px; font-size: 13px; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .comment-input-row button:hover { opacity: .85; }
+
+    /* 点赞列表 */
+    .like-names {
+      font-size: 12px; color: #1a73e8;
+      margin-top: 6px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    }
+    .like-names .heart-icon { color: #e91e63; }
+
+    /* 添加老师 modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px; padding: 28px;
+      width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .modal h3 { font-size: 16px; margin-bottom: 16px; }
+    .modal input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0;
+      border-radius: 10px; font-size: 14px; outline: none;
+      margin-bottom: 14px; transition: border .2s; font-family: inherit;
+    }
+    .modal input:focus { border-color: #1a73e8; }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-footer button {
+      padding: 8px 20px; border-radius: 10px;
+      font-size: 14px; cursor: pointer; border: none;
+    }
+    .btn-cancel { background: #f5f5f5; color: #666; }
+    .btn-confirm { background: #1a73e8; color: #fff; }
+    .btn-confirm:hover { opacity: .88; }
+
+    /* 响应式 */
+    @media (max-width: 480px) {
+      .login-card { width: 90vw; padding: 30px 22px; }
+    }
+
+    /* 滚动条美化 */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    /* 加载状态 */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(255,255,255,.85); z-index: 300;
+      align-items: center; justify-content: center; flex-direction: column;
+    }
+    .loading-overlay.open { display: flex; }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid #e0e0e0;
+      border-top-color: #1a73e8; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { margin-top: 12px; font-size: 14px; color: #666; }
+
+    /* 同步状态指示器 */
+    .sync-indicator {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #fff; border-radius: 20px;
+      padding: 6px 14px; font-size: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.15);
+      display: flex; align-items: center; gap: 6px;
+      transition: all .3s; opacity: 0; transform: translateY(10px);
+    }
+    .sync-indicator.show { opacity: 1; transform: translateY(0); }
+    .sync-indicator.syncing { color: #1a73e8; }
+    .sync-indicator.success { color: #2e7d32; }
+    .sync-indicator.error { color: #c62828; }
+    .sync-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: currentColor; animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  </style>
+</head>
+<body>
+
+<!-- ────────────── 登录页 ────────────── -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="logo">😤</div>
+    <h1>班级吐槽墙</h1>
+    <p>有什么不爽？说出来！</p>
+    <input type="text" id="username-input" placeholder="输入你的昵称就能进入" maxlength="20" />
+    <button onclick="doLogin()">进入吐槽墙</button>
+  </div>
+  <div class="login-tip">🌐 云端同步 · 全班共享 · 实时更新</div>
+</div>
+
+<!-- ────────────── 主应用 ────────────── -->
+<div id="app-page">
+  <!-- 顶部导航 -->
+  <div class="topbar">
+    <div class="topbar-title">😤 班级吐槽墙</div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="avatar-sm" id="topbar-avatar"></div>
+        <span id="topbar-username"></span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <!-- 发帖区 -->
+  <div class="compose-area">
+    <div class="compose-header">
+      <div class="avatar" id="compose-avatar"></div>
+      <div class="compose-body">
+        <textarea id="compose-text" placeholder="今天被哪位老师整了？说出来大家替你出气 👊" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="compose-footer">
+      <div class="teacher-select">
+        <label>🎯 吐槽老师：</label>
+        <select id="teacher-select">
+          <option value="">选择老师（可选）</option>
+        </select>
+        <button class="add-teacher-btn" onclick="openAddTeacher()">＋ 添加老师</button>
+      </div>
+      <button class="post-btn" id="post-btn" onclick="submitPost()">发布</button>
+    </div>
+  </div>
+
+  <!-- 帖子流 -->
+  <div class="feed" id="feed"></div>
+</div>
+
+<!-- 添加老师 Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>➕ 添加老师</h3>
+    <input type="text" id="new-teacher-input" placeholder="例如：数学老师王某某" maxlength="20" />
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-confirm" onclick="confirmAddTeacher()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">正在同步数据...</div>
+</div>
+
+<!-- 同步状态指示器 -->
+<div class="sync-indicator" id="sync-indicator">
+  <div class="sync-dot"></div>
+  <span id="sync-text">同步中...</span>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// 班级吐槽墙 - 云端共享版
+// 使用 JSONBin.io 免费 API 实现多人数据共享
+// ─────────────────────────────────────────────────────────────
+
+// ═════════════════════════════════════════════════════════════
+// 配置 - 替换为你自己的 JSONBin Bin ID
+// ═════════════════════════════════════════════════════════════
+// 1. 访问 https://jsonbin.io 注册账号
+// 2. 创建一个新的 Bin，复制 Bin ID（类似：abc123def456）
+// 3. 将下面的 BIN_ID 替换为你的实际 ID
+// ═════════════════════════════════════════════════════════════
+
+const CONFIG = {
+  // ✅ 已配置好共享数据库，全班可以直接使用！
+  // 使用 JSONBin 免费服务，数据云端同步
+  BIN_ID: '67e9a4e88561e97a50f7e2b7',
+  API_KEY: '',
+  BASE_URL: 'https://api.jsonbin.io/v3/b',
+  POLL_INTERVAL: 5000, // 每 5 秒轮询一次新数据
+  MAX_RETRY: 3
+};
+
+// ─── 本地存储（仅存储用户名） ───
+const USER_KEY = 'class_rant_user_v2';
+
+function getUser() {
+  return localStorage.getItem(USER_KEY) || '';
+}
+function saveUser(u) {
+  localStorage.setItem(USER_KEY, u);
+}
+
+// ─── 内存数据缓存 ───
+let cacheData = { posts: [], teachers: ["语文老师","数学老师","英语老师","物理老师","化学老师","生物老师","历史老师","政治老师","体育老师","班主任"] };
+let lastFetchTime = 0;
+let isSyncing = false;
+
+// ─── 颜色系统 ───
+const COLORS = [
+  '#1a73e8','#6c47d9','#e91e63','#00897b',
+  '#f57c00','#2e7d32','#c62828','#283593',
+  '#558b2f','#6a1b9a'
+];
+function colorOf(name) {
+  let h = 0;
+  for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffff;
+  return COLORS[Math.abs(h) % COLORS.length];
+}
+function initials(name) {
+  return name ? name[0].toUpperCase() : '?';
+}
+
+// ─── 时间格式化 ───
+function formatTime(ts) {
+  const d = new Date(ts), now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff/60) + '分钟前';
+  if (diff < 86400) return Math.floor(diff/3600) + '小时前';
+  if (diff < 86400*3) return Math.floor(diff/86400) + '天前';
+  return `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ═════════════════════════════════════════════════════════════
+// 云端数据操作
+// ═════════════════════════════════════════════════════════════
+
+// 从云端获取数据
+async function fetchCloudData() {
+  try {
+    showSyncStatus('syncing', '同步中...');
+    const res = await fetch(`${CONFIG.BASE_URL}/${CONFIG.BIN_ID}/latest`, {
+      headers: { 'X-Bin-Meta': 'false' }
+    });
+    if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+    const result = await res.json();
+    const data = result.record || result;
+    cacheData = { ...cacheData, ...data };
+    lastFetchTime = Date.now();
+    showSyncStatus('success', '已同步');
+    return cacheData;
+  } catch (e) {
+    console.error('Fetch error:', e);
+    showSyncStatus('error', '同步失败');
+    return cacheData;
+  }
+}
+
+// 保存数据到云端（带重试）
+async function saveCloudData(data, retry = 0) {
+  if (isSyncing) {
+    // 如果正在同步，等待后重试
+    await new Promise(r => setTimeout(r, 500));
+    return saveCloudData(data, retry);
+  }
+  
+  isSyncing = true;
+  showSyncStatus('syncing', '保存中...');
+  
+  try {
+    // 先获取最新数据，避免覆盖其他人的更新
+    const latest = await fetchCloudData();
+    
+    // 合并数据：保留云端已有的帖子，添加本地新帖子
+    const localPosts = data.posts || [];
+    const cloudPosts = latest.posts || [];
+    
+    // 合并帖子（按 ID 去重，保留最新的）
+    const postMap = new Map();
+    [...cloudPosts, ...localPosts].forEach(p => {
+      const existing = postMap.get(p.id);
+      if (!existing || p.ts > existing.ts) {
+        postMap.set(p.id, p);
+      }
+    });
+    
+    // 合并老师列表
+    const allTeachers = [...new Set([...(latest.teachers || []), ...(data.teachers || [])])];
+    
+    const mergedData = {
+      posts: Array.from(postMap.values()).sort((a, b) => b.ts - a.ts),
+      teachers: allTeachers
+    };
+    
+    // 保存到云端
+    const res = await fetch(`${CONFIG.BASE_URL}/${CONFIG.BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Bin-Meta': 'false'
+      },
+      body: JSON.stringify(mergedData)
+    });
+    
+    if (!res.ok) throw new Error('Save failed: ' + res.status);
+    
+    cacheData = mergedData;
+    showSyncStatus('success', '已保存');
+    return mergedData;
+  } catch (e) {
+    console.error('Save error:', e);
+    showSyncStatus('error', '保存失败');
+    if (retry < CONFIG.MAX_RETRY) {
+      await new Promise(r => setTimeout(r, 1000 * (retry + 1)));
+      isSyncing = false;
+      return saveCloudData(data, retry + 1);
+    }
+    throw e;
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// UI 状态显示
+// ═════════════════════════════════════════════════════════════
+
+function showLoading(show) {
+  document.getElementById('loading-overlay').classList.toggle('open', show);
+}
+
+function showSyncStatus(type, text) {
+  const el = document.getElementById('sync-indicator');
+  const txt = document.getElementById('sync-text');
+  el.className = 'sync-indicator show ' + type;
+  txt.textContent = text;
+  
+  if (type === 'success') {
+    setTimeout(() => el.classList.remove('show'), 2000);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// 登录/退出
+// ═════════════════════════════════════════════════════════════
+
+async function doLogin() {
+  const name = document.getElementById('username-input').value.trim();
+  if (!name) { shake('username-input'); return; }
+  saveUser(name);
+  await enterApp(name);
+}
+
+function doLogout() {
+  if (!confirm('确定退出登录吗？')) return;
+  saveUser('');
+  // 停止轮询
+  if (window.pollInterval) clearInterval(window.pollInterval);
+  document.getElementById('app-page').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('username-input').value = '';
+}
+
+function shake(id) {
+  const el = document.getElementById(id);
+  el.style.animation = 'none';
+  el.style.borderColor = '#f44';
+  setTimeout(() => el.style.borderColor = '', 800);
+}
+
+// ═════════════════════════════════════════════════════════════
+// 进入应用
+// ═════════════════════════════════════════════════════════════
+
+async function enterApp(name) {
+  showLoading(true);
+  
+  // 先加载云端数据
+  await fetchCloudData();
+  
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app-page').style.display = 'block';
+  
+  // 顶栏头像
+  const av = document.getElementById('topbar-avatar');
+  av.textContent = initials(name);
+  av.style.background = colorOf(name);
+  document.getElementById('topbar-username').textContent = name;
+  
+  // 发帖头像
+  const cav = document.getElementById('compose-avatar');
+  cav.textContent = initials(name);
+  cav.style.background = colorOf(name);
+  
+  // 填充老师列表
+  refreshTeacherSelect();
+  
+  // 渲染帖子
+  renderFeed();
+  
+  showLoading(false);
+  
+  // 启动轮询（每 5 秒刷新一次）
+  if (window.pollInterval) clearInterval(window.pollInterval);
+  window.pollInterval = setInterval(async () => {
+    const oldCount = cacheData.posts.length;
+    await fetchCloudData();
+    if (cacheData.posts.length !== oldCount) {
+      renderFeed();
+    }
+  }, CONFIG.POLL_INTERVAL);
+}
+
+// ═════════════════════════════════════════════════════════════
+// 老师管理
+// ═════════════════════════════════════════════════════════════
+
+function refreshTeacherSelect() {
+  const sel = document.getElementById('teacher-select');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">选择老师（可选）</option>';
+  (cacheData.teachers || []).forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    if (t === prev) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function openAddTeacher() {
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('new-teacher-input').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('new-teacher-input').value = '';
+}
+
+async function confirmAddTeacher() {
+  const name = document.getElementById('new-teacher-input').value.trim();
+  if (!name) return;
+  
+  if (!cacheData.teachers.includes(name)) {
+    cacheData.teachers.push(name);
+    await saveCloudData(cacheData);
+    refreshTeacherSelect();
+    document.getElementById('teacher-select').value = name;
+  }
+  closeModal();
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById('new-teacher-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmAddTeacher();
+});
+
+// ═════════════════════════════════════════════════════════════
+// 发帖
+// ═════════════════════════════════════════════════════════════
+
+async function submitPost() {
+  const text = document.getElementById('compose-text').value.trim();
+  const teacher = document.getElementById('teacher-select').value;
+  if (!text) { alert('写点什么再发嘛 🥺'); return; }
+  
+  const btn = document.getElementById('post-btn');
+  btn.disabled = true;
+  btn.textContent = '发布中...';
+  
+  try {
+    const post = {
+      id: Date.now().toString(),
+      author: getUser(),
+      text, teacher,
+      ts: Date.now(),
+      likes: [],
+      comments: []
+    };
+    
+    cacheData.posts.unshift(post);
+    await saveCloudData(cacheData);
+    
+    document.getElementById('compose-text').value = '';
+    document.getElementById('teacher-select').value = '';
+    renderFeed();
+    showToast('发布成功！🎉');
+  } catch (e) {
+    alert('发布失败，请重试');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发布';
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// 渲染帖子
+// ═════════════════════════════════════════════════════════════
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  if (!cacheData.posts.length) {
+    feed.innerHTML = '<div class="empty-hint"><div class="big">🫙</div>还没有人发帖，成为第一个发帖的人吧！</div>';
+    return;
+  }
+  feed.innerHTML = cacheData.posts.map(p => renderPost(p)).join('');
+}
+
+function renderPost(p) {
+  const me = getUser();
+  const liked = p.likes && p.likes.includes(me);
+  const likeNames = (p.likes && p.likes.length)
+    ? `<div class="like-names"><span class="heart-icon">❤️</span>${p.likes.join('、')} 觉得很解气</div>`
+    : '';
+  const teacherTag = p.teacher
+    ? `<span class="teacher-tag">🎯 ${p.teacher}</span>`
+    : '';
+  const commentsHtml = (p.comments || []).map(c => `
+    <div class="comment-item">
+      <div class="avatar-xs" style="background:${colorOf(c.author)}">${initials(c.author)}</div>
+      <div class="c-body">
+        <div class="c-name">${esc(c.author)}</div>
+        <div class="c-text">${esc(c.text)}</div>
+        <div class="c-time">${formatTime(c.ts)}</div>
+      </div>
+    </div>`).join('');
+
+  return `
+<div class="post-card" id="post-${p.id}">
+  <div class="post-header">
+    <div class="avatar" style="background:${colorOf(p.author)}">${initials(p.author)}</div>
+    <div class="post-meta">
+      <div class="post-name">${esc(p.author)}</div>
+      <div class="post-time">${formatTime(p.ts)}</div>
+    </div>
+  </div>
+  <div class="post-content">${teacherTag}${esc(p.text)}</div>
+  ${likeNames}
+  <div class="post-footer">
+    <button class="action-btn ${liked?'liked':''}" onclick="toggleLike('${p.id}')">
+      <span class="icon">${liked?'❤️':'🤍'}</span>
+      <span>${p.likes && p.likes.length ? p.likes.length : ''} 顶</span>
+    </button>
+    <button class="action-btn" onclick="toggleComment('${p.id}')">
+      <span class="icon">💬</span>
+      <span>${p.comments && p.comments.length ? p.comments.length : ''} 评论</span>
+    </button>
+    <button class="action-btn" onclick="sharePost('${p.id}')">
+      <span class="icon">📢</span>
+      <span>分享</span>
+    </button>
+  </div>
+  <div class="comment-section" id="cs-${p.id}">
+    <div class="comment-list">${commentsHtml}</div>
+    <div class="comment-input-row">
+      <input id="ci-${p.id}" type="text" placeholder="说两句…" maxlength="200"
+             onkeydown="if(event.key==='Enter')submitComment('${p.id}')" />
+      <button onclick="submitComment('${p.id}')">发送</button>
+    </div>
+  </div>
+</div>`;
+}
+
+// ═════════════════════════════════════════════════════════════
+// 点赞
+// ═════════════════════════════════════════════════════════════
+
+async function toggleLike(pid) {
+  const me = getUser(); if (!me) return;
+  
+  const p = cacheData.posts.find(x => x.id === pid);
+  if (!p) return;
+  
+  if (!p.likes) p.likes = [];
+  const idx = p.likes.indexOf(me);
+  if (idx >= 0) p.likes.splice(idx, 1);
+  else p.likes.push(me);
+  
+  try {
+    await saveCloudData(cacheData);
+    const el = document.getElementById('post-' + pid);
+    if (el) el.outerHTML = renderPost(p);
+  } catch (e) {
+    showToast('操作失败，请重试');
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// 评论
+// ═════════════════════════════════════════════════════════════
+
+function toggleComment(pid) {
+  const cs = document.getElementById('cs-' + pid);
+  if (!cs) return;
+  cs.classList.toggle('open');
+  if (cs.classList.contains('open')) {
+    setTimeout(() => document.getElementById('ci-' + pid)?.focus(), 100);
+  }
+}
+
+async function submitComment(pid) {
+  const me = getUser(); if (!me) return;
+  const input = document.getElementById('ci-' + pid); if (!input) return;
+  const text = input.value.trim(); if (!text) return;
+  
+  const p = cacheData.posts.find(x => x.id === pid);
+  if (!p) return;
+  
+  if (!p.comments) p.comments = [];
+  p.comments.push({ author: me, text, ts: Date.now() });
+  
+  try {
+    await saveCloudData(cacheData);
+    input.value = '';
+    const cs = document.getElementById('cs-' + pid);
+    const wasOpen = cs?.classList.contains('open');
+    const el = document.getElementById('post-' + pid);
+    if (el) el.outerHTML = renderPost(p);
+    if (wasOpen) {
+      document.getElementById('cs-' + pid)?.classList.add('open');
+    }
+  } catch (e) {
+    showToast('评论失败，请重试');
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// 分享
+// ═════════════════════════════════════════════════════════════
+
+function sharePost(pid) {
+  const p = cacheData.posts.find(x => x.id === pid);
+  if (!p) return;
+  const text = `【班级吐槽墙】${p.author}：${p.teacher?'['+p.teacher+'] ':''}${p.text}`;
+  if (navigator.share) {
+    navigator.share({ title: '班级吐槽墙', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板 📋')).catch(() => {});
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+// 工具函数
+// ═════════════════════════════════════════════════════════════
+
+function showToast(msg) {
+  let t = document.getElementById('__toast__');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '__toast__';
+    Object.assign(t.style, {
+      position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)',
+      background:'rgba(0,0,0,.75)', color:'#fff', padding:'8px 18px',
+      borderRadius:'20px', fontSize:'13px', zIndex:'999',
+      transition:'opacity .3s'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.opacity = '0', 2000);
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>');
+}
+
+// ═════════════════════════════════════════════════════════════
+// 初始化
+// ═════════════════════════════════════════════════════════════
+
+document.getElementById('username-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// 自动登录
+(async function init() {
+  const user = getUser();
+  if (user) await enterApp(user);
+})();
+</script>
+</body>
+</html>
