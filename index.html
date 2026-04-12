@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>班级吐槽墙 💬</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
-      background: #ededed;
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
     }
 
@@ -20,287 +23,760 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a73e8 0%, #6c47d9 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
     }
+
+    .login-bg-decoration {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .login-bg-decoration::before,
+    .login-bg-decoration::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,.1);
+    }
+
+    .login-bg-decoration::before {
+      width: 400px; height: 400px;
+      top: -100px; right: -100px;
+    }
+
+    .login-bg-decoration::after {
+      width: 300px; height: 300px;
+      bottom: -80px; left: -80px;
+    }
+
     .login-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 40px 36px;
-      width: 360px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      background: rgba(255,255,255,.95);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 80px rgba(0,0,0,.3);
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
-    .login-card .logo { font-size: 56px; margin-bottom: 12px; }
-    .login-card h1 { font-size: 22px; color: #222; margin-bottom: 6px; }
-    .login-card p  { font-size: 13px; color: #999; margin-bottom: 28px; }
-    .login-card input {
-      width: 100%; padding: 13px 16px;
-      border: 1.5px solid #e0e0e0; border-radius: 10px;
-      font-size: 15px; outline: none; transition: border .2s;
+
+    .login-card .logo { 
+      font-size: 72px; 
       margin-bottom: 16px;
+      animation: bounce 2s ease-in-out infinite;
     }
-    .login-card input:focus { border-color: #1a73e8; }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .login-card h1 { 
+      font-size: 28px; 
+      color: #1a1a2e; 
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .login-card p { 
+      font-size: 14px; 
+      color: #666; 
+      margin-bottom: 32px;
+    }
+
+    .login-card input {
+      width: 100%; 
+      padding: 16px 20px;
+      border: 2px solid #e8e8e8; 
+      border-radius: 16px;
+      font-size: 16px; 
+      outline: none; 
+      transition: all .3s;
+      margin-bottom: 16px;
+      background: #f8f9fa;
+    }
+
+    .login-card input:focus { 
+      border-color: #667eea;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(102,126,234,.15);
+    }
+
     .login-card button {
-      width: 100%; padding: 13px;
-      background: linear-gradient(90deg, #1a73e8, #6c47d9);
-      color: #fff; border: none; border-radius: 10px;
-      font-size: 16px; font-weight: 600; cursor: pointer;
-      transition: opacity .2s;
+      width: 100%; 
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; 
+      border: none; 
+      border-radius: 16px;
+      font-size: 17px; 
+      font-weight: 600; 
+      cursor: pointer;
+      transition: all .3s;
+      box-shadow: 0 8px 25px rgba(102,126,234,.4);
     }
-    .login-card button:hover { opacity: .88; }
-    .login-tip { margin-top: 16px; font-size: 12px; color: rgba(255,255,255,.7); }
+
+    .login-card button:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(102,126,234,.5);
+    }
+
+    .login-tip { 
+      margin-top: 24px; 
+      font-size: 13px; 
+      color: rgba(255,255,255,.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .login-tip span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
 
     /* ─── 主界面 ─── */
     #app-page { display: none; }
 
     /* 顶部导航 */
     .topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: #fff;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px; height: 56px;
-      border-bottom: 1px solid #eee;
-      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      position: sticky; 
+      top: 0; 
+      z-index: 100;
+      background: rgba(255,255,255,.95);
+      backdrop-filter: blur(20px);
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+      padding: 0 20px; 
+      height: 64px;
+      border-bottom: 1px solid rgba(255,255,255,.2);
+      box-shadow: 0 4px 20px rgba(0,0,0,.1);
     }
-    .topbar-title { font-size: 18px; font-weight: 700; color: #222; }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .topbar-title { 
+      font-size: 20px; 
+      font-weight: 700; 
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar-right { 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+    }
+
     .user-chip {
-      display: flex; align-items: center; gap: 6px;
-      background: #f0f4ff; border-radius: 20px; padding: 4px 12px;
-      font-size: 13px; color: #1a73e8; font-weight: 600;
+      display: flex; 
+      align-items: center; 
+      gap: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 24px; 
+      padding: 6px 14px;
+      font-size: 13px; 
+      color: #fff; 
+      font-weight: 600;
     }
+
     .user-chip .avatar-sm {
-      width: 24px; height: 24px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: #fff;
+      width: 26px; 
+      height: 26px; 
+      border-radius: 50%;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 12px; 
+      font-weight: 700; 
+      color: #fff;
+      background: rgba(255,255,255,.2);
     }
+
     .logout-btn {
-      background: none; border: 1px solid #e0e0e0; border-radius: 8px;
-      padding: 4px 10px; font-size: 12px; color: #999; cursor: pointer;
-      transition: all .2s;
+      background: rgba(255,255,255,.1);
+      border: none; 
+      border-radius: 12px;
+      padding: 8px 16px; 
+      font-size: 13px; 
+      color: #666; 
+      cursor: pointer;
+      transition: all .3s;
     }
-    .logout-btn:hover { border-color: #f44; color: #f44; }
+
+    .logout-btn:hover { 
+      background: #fee;
+      color: #e74c3c;
+    }
 
     /* 发帖框 */
     .compose-area {
-      background: #fff; margin: 12px; border-radius: 14px;
-      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(20px);
+      margin: 16px; 
+      border-radius: 24px;
+      padding: 20px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,.15);
     }
-    .compose-header { display: flex; align-items: flex-start; gap: 12px; }
+
+    .compose-header { 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 14px; 
+    }
+
     .avatar {
-      width: 42px; height: 42px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 800; color: #fff; flex-shrink: 0;
+      width: 48px; 
+      height: 48px; 
+      border-radius: 14px;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 20px; 
+      font-weight: 700; 
+      color: #fff; 
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,.2);
     }
+
     .compose-body { flex: 1; }
+
     .compose-body textarea {
-      width: 100%; border: none; outline: none; resize: none;
-      font-size: 15px; color: #333; background: transparent;
-      line-height: 1.6; min-height: 60px; font-family: inherit;
+      width: 100%; 
+      border: none; 
+      outline: none; 
+      resize: none;
+      font-size: 16px; 
+      color: #333; 
+      background: transparent;
+      line-height: 1.6; 
+      min-height: 70px; 
+      font-family: inherit;
     }
-    .compose-body textarea::placeholder { color: #bbb; }
+
+    .compose-body textarea::placeholder { color: #aaa; }
+
     .compose-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5;
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+      margin-top: 14px; 
+      padding-top: 14px; 
+      border-top: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+      gap: 12px;
     }
+
     .teacher-select {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      flex-wrap: wrap;
     }
-    .teacher-select label { font-size: 13px; color: #888; }
+
+    .teacher-select label { 
+      font-size: 14px; 
+      color: #666;
+      font-weight: 500;
+    }
+
     .teacher-select select {
-      border: 1.5px solid #e0e0e0; border-radius: 8px;
-      padding: 5px 10px; font-size: 13px; outline: none;
-      background: #fafafa; cursor: pointer;
-      transition: border .2s;
+      border: 2px solid #e8e8e8; 
+      border-radius: 12px;
+      padding: 8px 14px; 
+      font-size: 14px; 
+      outline: none;
+      background: #f8f9fa; 
+      cursor: pointer;
+      transition: all .3s;
+      font-family: inherit;
     }
-    .teacher-select select:focus { border-color: #1a73e8; }
+
+    .teacher-select select:focus { 
+      border-color: #667eea;
+      background: #fff;
+    }
+
     .add-teacher-btn {
-      background: none; border: 1.5px dashed #ccc; border-radius: 8px;
-      padding: 4px 10px; font-size: 12px; color: #aaa; cursor: pointer;
-      transition: all .2s;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: #fff;
+      border: none; 
+      border-radius: 12px;
+      padding: 8px 16px; 
+      font-size: 13px; 
+      cursor: pointer;
+      transition: all .3s;
+      font-weight: 500;
     }
-    .add-teacher-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+
+    .add-teacher-btn:hover { 
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(245,87,108,.4);
+    }
+
     .post-btn {
-      background: linear-gradient(90deg, #1a73e8, #6c47d9);
-      color: #fff; border: none; border-radius: 10px;
-      padding: 8px 22px; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: opacity .2s;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; 
+      border: none; 
+      border-radius: 14px;
+      padding: 10px 28px; 
+      font-size: 15px; 
+      font-weight: 600;
+      cursor: pointer; 
+      transition: all .3s;
+      box-shadow: 0 6px 20px rgba(102,126,234,.4);
     }
-    .post-btn:hover { opacity: .85; }
-    .post-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .post-btn:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102,126,234,.5);
+    }
+
+    .post-btn:disabled { 
+      opacity: .5; 
+      cursor: not-allowed;
+      transform: none;
+    }
 
     /* 老师标签 */
     .teacher-tag {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: #fff3e0; color: #e65100;
-      border-radius: 6px; padding: 2px 8px; font-size: 12px;
-      font-weight: 600; margin-right: 4px;
+      display: inline-flex; 
+      align-items: center; 
+      gap: 4px;
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      color: #fff;
+      border-radius: 8px; 
+      padding: 4px 10px; 
+      font-size: 12px;
+      font-weight: 600; 
+      margin-right: 6px;
+      box-shadow: 0 2px 8px rgba(250,112,154,.3);
     }
 
     /* 帖子列表 */
-    .feed { padding: 0 12px 80px; }
-    .empty-hint {
-      text-align: center; padding: 60px 20px;
-      color: #bbb; font-size: 14px;
+    .feed { 
+      padding: 0 16px 100px; 
+      max-width: 680px;
+      margin: 0 auto;
     }
-    .empty-hint .big { font-size: 48px; margin-bottom: 12px; }
+
+    .empty-hint {
+      text-align: center; 
+      padding: 80px 20px;
+      color: rgba(255,255,255,.9);
+      font-size: 15px;
+    }
+
+    .empty-hint .big { 
+      font-size: 80px; 
+      margin-bottom: 20px;
+      animation: bounce 2s ease-in-out infinite;
+    }
 
     /* 单条帖子 */
     .post-card {
-      background: #fff; border-radius: 14px; margin-bottom: 12px;
-      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      animation: fadeSlideIn .3s ease;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(20px);
+      border-radius: 24px; 
+      margin-bottom: 16px;
+      padding: 20px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,.12);
+      animation: slideUp .4s ease;
     }
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(-10px); }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .post-header { display: flex; align-items: flex-start; gap: 12px; }
+
+    .post-header { 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 14px; 
+    }
+
     .post-meta { flex: 1; }
-    .post-name { font-size: 14px; font-weight: 700; color: #1a73e8; }
-    .post-time { font-size: 12px; color: #bbb; margin-top: 2px; }
+
+    .post-name { 
+      font-size: 15px; 
+      font-weight: 700; 
+      color: #667eea; 
+    }
+
+    .post-time { 
+      font-size: 12px; 
+      color: #999; 
+      margin-top: 3px; 
+    }
+
     .post-content {
-      font-size: 15px; color: #333; line-height: 1.7;
-      margin: 10px 0;
+      font-size: 15px; 
+      color: #333; 
+      line-height: 1.8;
+      margin: 14px 0;
     }
+
     .post-footer {
-      display: flex; align-items: center; gap: 16px;
-      padding-top: 10px; border-top: 1px solid #f5f5f5;
+      display: flex; 
+      align-items: center; 
+      gap: 20px;
+      padding-top: 14px; 
+      border-top: 1px solid #f5f5f5;
     }
+
     .action-btn {
-      display: flex; align-items: center; gap: 5px;
-      background: none; border: none; cursor: pointer;
-      font-size: 13px; color: #999; transition: color .2s;
-      padding: 4px 0;
+      display: flex; 
+      align-items: center; 
+      gap: 6px;
+      background: none; 
+      border: none; 
+      cursor: pointer;
+      font-size: 14px; 
+      color: #888; 
+      transition: all .3s;
+      padding: 8px 12px;
+      border-radius: 12px;
     }
-    .action-btn:hover { color: #1a73e8; }
-    .action-btn.liked { color: #e91e63 !important; }
-    .action-btn .icon { font-size: 16px; }
+
+    .action-btn:hover { 
+      background: #f8f9fa;
+      color: #667eea;
+    }
+
+    .action-btn.liked { 
+      color: #e91e63 !important;
+      background: #fce4ec;
+    }
+
+    .action-btn .icon { font-size: 18px; }
 
     /* 评论区 */
-    .comment-section { margin-top: 10px; display: none; }
+    .comment-section { 
+      margin-top: 14px; 
+      display: none; 
+      background: #f8f9fa;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
     .comment-section.open { display: block; }
-    .comment-list { margin-bottom: 8px; }
+
+    .comment-list { margin-bottom: 12px; }
+
     .comment-item {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 6px 0; border-bottom: 1px solid #fafafa;
+      display: flex; 
+      align-items: flex-start; 
+      gap: 10px;
+      padding: 10px 0; 
+      border-bottom: 1px solid #eee;
     }
+
     .comment-item:last-child { border-bottom: none; }
+
     .comment-item .avatar-xs {
-      width: 28px; height: 28px; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+      width: 32px; 
+      height: 32px; 
+      border-radius: 10px;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 13px; 
+      font-weight: 700; 
+      color: #fff; 
+      flex-shrink: 0;
     }
+
     .comment-item .c-body { flex: 1; }
-    .comment-item .c-name { font-size: 12px; font-weight: 700; color: #1a73e8; }
-    .comment-item .c-text { font-size: 13px; color: #444; margin-top: 2px; line-height: 1.5; }
-    .comment-item .c-time { font-size: 11px; color: #ccc; margin-top: 2px; }
+
+    .comment-item .c-name { 
+      font-size: 13px; 
+      font-weight: 600; 
+      color: #667eea; 
+    }
+
+    .comment-item .c-text { 
+      font-size: 14px; 
+      color: #444; 
+      margin-top: 4px; 
+      line-height: 1.6; 
+    }
+
+    .comment-item .c-time { 
+      font-size: 11px; 
+      color: #bbb; 
+      margin-top: 4px; 
+    }
+
     .comment-input-row {
-      display: flex; gap: 8px; margin-top: 8px;
+      display: flex; 
+      gap: 10px; 
+      margin-top: 12px;
     }
+
     .comment-input-row input {
-      flex: 1; border: 1.5px solid #eee; border-radius: 20px;
-      padding: 7px 14px; font-size: 13px; outline: none;
-      transition: border .2s; font-family: inherit;
+      flex: 1; 
+      border: 2px solid #e8e8e8; 
+      border-radius: 24px;
+      padding: 10px 18px; 
+      font-size: 14px; 
+      outline: none;
+      transition: all .3s; 
+      font-family: inherit;
     }
-    .comment-input-row input:focus { border-color: #1a73e8; }
+
+    .comment-input-row input:focus { 
+      border-color: #667eea;
+    }
+
     .comment-input-row button {
-      background: #1a73e8; color: #fff; border: none; border-radius: 20px;
-      padding: 7px 16px; font-size: 13px; cursor: pointer;
-      transition: opacity .2s;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; 
+      border: none; 
+      border-radius: 24px;
+      padding: 10px 20px; 
+      font-size: 14px; 
+      cursor: pointer;
+      transition: all .3s;
+      font-weight: 500;
     }
-    .comment-input-row button:hover { opacity: .85; }
+
+    .comment-input-row button:hover { 
+      transform: scale(1.05);
+    }
 
     /* 点赞列表 */
     .like-names {
-      font-size: 12px; color: #1a73e8;
-      margin-top: 6px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+      font-size: 13px; 
+      color: #e91e63;
+      margin-top: 10px; 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #fff5f7 0%, #fff0f5 100%);
+      border-radius: 12px;
     }
-    .like-names .heart-icon { color: #e91e63; }
+
+    .like-names .heart-icon { 
+      font-size: 16px;
+      animation: heartbeat 1s ease infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
 
     /* 添加老师 modal */
     .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.45); z-index: 200;
-      align-items: center; justify-content: center;
+      display: none; 
+      position: fixed; 
+      inset: 0;
+      background: rgba(0,0,0,.5); 
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      align-items: center; 
+      justify-content: center;
     }
+
     .modal-overlay.open { display: flex; }
+
     .modal {
-      background: #fff; border-radius: 16px; padding: 28px;
-      width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      background: #fff; 
+      border-radius: 24px; 
+      padding: 32px;
+      width: 90%;
+      max-width: 360px; 
+      box-shadow: 0 25px 80px rgba(0,0,0,.3);
     }
-    .modal h3 { font-size: 16px; margin-bottom: 16px; }
+
+    .modal h3 { 
+      font-size: 18px; 
+      margin-bottom: 20px;
+      text-align: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
     .modal input {
-      width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0;
-      border-radius: 10px; font-size: 14px; outline: none;
-      margin-bottom: 14px; transition: border .2s; font-family: inherit;
+      width: 100%; 
+      padding: 14px 18px; 
+      border: 2px solid #e8e8e8;
+      border-radius: 14px; 
+      font-size: 15px; 
+      outline: none;
+      margin-bottom: 20px; 
+      transition: all .3s; 
+      font-family: inherit;
     }
-    .modal input:focus { border-color: #1a73e8; }
-    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .modal input:focus { 
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102,126,234,.15);
+    }
+
+    .modal-footer { 
+      display: flex; 
+      gap: 12px; 
+      justify-content: flex-end; 
+    }
+
     .modal-footer button {
-      padding: 8px 20px; border-radius: 10px;
-      font-size: 14px; cursor: pointer; border: none;
-    }
-    .btn-cancel { background: #f5f5f5; color: #666; }
-    .btn-confirm { background: #1a73e8; color: #fff; }
-    .btn-confirm:hover { opacity: .88; }
-
-    /* 响应式 */
-    @media (max-width: 480px) {
-      .login-card { width: 90vw; padding: 30px 22px; }
+      padding: 12px 24px; 
+      border-radius: 14px;
+      font-size: 15px; 
+      cursor: pointer; 
+      border: none;
+      transition: all .3s;
+      font-weight: 500;
     }
 
-    /* 滚动条美化 */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+    .btn-cancel { 
+      background: #f5f5f5; 
+      color: #666; 
+    }
+
+    .btn-confirm { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(102,126,234,.4);
+    }
+
+    .btn-confirm:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102,126,234,.5);
+    }
 
     /* 加载状态 */
     .loading-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(255,255,255,.85); z-index: 300;
-      align-items: center; justify-content: center; flex-direction: column;
+      display: none; 
+      position: fixed; 
+      inset: 0;
+      background: rgba(102,126,234,.95); 
+      z-index: 300;
+      align-items: center; 
+      justify-content: center; 
+      flex-direction: column;
     }
+
     .loading-overlay.open { display: flex; }
+
     .spinner {
-      width: 40px; height: 40px; border: 3px solid #e0e0e0;
-      border-top-color: #1a73e8; border-radius: 50%;
+      width: 50px; 
+      height: 50px; 
+      border: 4px solid rgba(255,255,255,.3);
+      border-top-color: #fff; 
+      border-radius: 50%;
       animation: spin 1s linear infinite;
     }
+
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { margin-top: 12px; font-size: 14px; color: #666; }
+
+    .loading-text { 
+      margin-top: 16px; 
+      font-size: 16px; 
+      color: #fff;
+      font-weight: 500;
+    }
 
     /* 同步状态指示器 */
     .sync-indicator {
-      position: fixed; bottom: 20px; right: 20px;
-      background: #fff; border-radius: 20px;
-      padding: 6px 14px; font-size: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.15);
-      display: flex; align-items: center; gap: 6px;
-      transition: all .3s; opacity: 0; transform: translateY(10px);
+      position: fixed; 
+      bottom: 24px; 
+      right: 24px;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 10px 18px; 
+      font-size: 13px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.15);
+      display: flex; 
+      align-items: center; 
+      gap: 8px;
+      transition: all .3s; 
+      opacity: 0; 
+      transform: translateY(20px);
     }
-    .sync-indicator.show { opacity: 1; transform: translateY(0); }
-    .sync-indicator.syncing { color: #1a73e8; }
-    .sync-indicator.success { color: #2e7d32; }
-    .sync-indicator.error { color: #c62828; }
+
+    .sync-indicator.show { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+
+    .sync-indicator.syncing { color: #667eea; }
+    .sync-indicator.success { color: #2ecc71; }
+    .sync-indicator.error { color: #e74c3c; }
+
     .sync-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: currentColor; animation: pulse 1.5s infinite;
+      width: 10px; 
+      height: 10px; 
+      border-radius: 50%;
+      background: currentColor; 
+      animation: pulse 1.5s ease infinite;
     }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+    @keyframes pulse { 
+      0%,100% { opacity: 1; transform: scale(1); } 
+      50% { opacity: .5; transform: scale(.8); } 
+    }
+
+    /* 响应式 */
+    @media (max-width: 480px) {
+      .login-card { 
+        padding: 36px 28px; 
+      }
+
+      .topbar { padding: 0 16px; }
+
+      .compose-area { margin: 12px; padding: 16px; }
+
+      .post-card { padding: 16px; }
+
+      .post-footer { gap: 12px; }
+
+      .action-btn { 
+        padding: 6px 10px;
+        font-size: 13px; 
+      }
+    }
+
+    /* 滚动条美化 */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.3); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.5); }
   </style>
 </head>
 <body>
 
 <!-- ────────────── 登录页 ────────────── -->
 <div id="login-page">
+  <div class="login-bg-decoration"></div>
   <div class="login-card">
     <div class="logo">😤</div>
     <h1>班级吐槽墙</h1>
-    <p>有什么不爽？说出来！</p>
+    <p>有什么不爽？说出来让大家开心一下！</p>
     <input type="text" id="username-input" placeholder="输入你的昵称就能进入" maxlength="20" />
-    <button onclick="doLogin()">进入吐槽墙</button>
+    <button onclick="doLogin()">🚀 进入吐槽墙</button>
   </div>
-  <div class="login-tip">🌐 云端同步 · 全班共享 · 实时更新</div>
+  <div class="login-tip">
+    <span>🌐 云端同步</span>
+    <span>·</span>
+    <span>👥 全班共享</span>
+    <span>·</span>
+    <span>⚡ 实时更新</span>
+  </div>
 </div>
 
 <!-- ────────────── 主应用 ────────────── -->
@@ -322,12 +798,12 @@
     <div class="compose-header">
       <div class="avatar" id="compose-avatar"></div>
       <div class="compose-body">
-        <textarea id="compose-text" placeholder="今天被哪位老师整了？说出来大家替你出气 👊" rows="3"></textarea>
+        <textarea id="compose-text" placeholder="今天被哪位老师整了？吐槽一下吧 💬" rows="3"></textarea>
       </div>
     </div>
     <div class="compose-footer">
       <div class="teacher-select">
-        <label>🎯 吐槽老师：</label>
+        <label>🎯</label>
         <select id="teacher-select">
           <option value="">选择老师（可选）</option>
         </select>
@@ -344,8 +820,8 @@
 <!-- 添加老师 Modal -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
-    <h3>➕ 添加老师</h3>
-    <input type="text" id="new-teacher-input" placeholder="例如：数学老师王某某" maxlength="20" />
+    <h3>✨ 添加老师</h3>
+    <input type="text" id="new-teacher-input" placeholder="例如：数学老师王老师" maxlength="20" />
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">取消</button>
       <button class="btn-confirm" onclick="confirmAddTeacher()">添加</button>
@@ -356,7 +832,7 @@
 <!-- 加载遮罩 -->
 <div class="loading-overlay" id="loading-overlay">
   <div class="spinner"></div>
-  <div class="loading-text">正在同步数据...</div>
+  <div class="loading-text">正在加载...</div>
 </div>
 
 <!-- 同步状态指示器 -->
@@ -367,30 +843,19 @@
 
 <script>
 // ─────────────────────────────────────────────────────────────
-// 班级吐槽墙 - 云端共享版
-// 使用 JSONBin.io 免费 API 实现多人数据共享
+// 班级吐槽墙 - 云端共享版 (美化版)
 // ─────────────────────────────────────────────────────────────
 
-// ═════════════════════════════════════════════════════════════
-// 配置 - 替换为你自己的 JSONBin Bin ID
-// ═════════════════════════════════════════════════════════════
-// 1. 访问 https://jsonbin.io 注册账号
-// 2. 创建一个新的 Bin，复制 Bin ID（类似：abc123def456）
-// 3. 将下面的 BIN_ID 替换为你的实际 ID
-// ═════════════════════════════════════════════════════════════
-
 const CONFIG = {
-  // ✅ 已配置好共享数据库，全班可以直接使用！
-  // 使用 JSONBin 免费服务，数据云端同步
   BIN_ID: '67e9a4e88561e97a50f7e2b7',
   API_KEY: '',
   BASE_URL: 'https://api.jsonbin.io/v3/b',
-  POLL_INTERVAL: 5000, // 每 5 秒轮询一次新数据
+  POLL_INTERVAL: 5000,
   MAX_RETRY: 3
 };
 
-// ─── 本地存储（仅存储用户名） ───
-const USER_KEY = 'class_rant_user_v2';
+// ─── 本地存储 ───
+const USER_KEY = 'class_rant_user_v3';
 
 function getUser() {
   return localStorage.getItem(USER_KEY) || '';
@@ -406,15 +871,17 @@ let isSyncing = false;
 
 // ─── 颜色系统 ───
 const COLORS = [
-  '#1a73e8','#6c47d9','#e91e63','#00897b',
-  '#f57c00','#2e7d32','#c62828','#283593',
-  '#558b2f','#6a1b9a'
+  '#667eea','#764ba2','#f093fb','#4facfe',
+  '#43e97b','#fa709a','#a8edea','#ff9a9e',
+  '#ffecd2','#c471f5'
 ];
+
 function colorOf(name) {
   let h = 0;
   for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffff;
   return COLORS[Math.abs(h) % COLORS.length];
 }
+
 function initials(name) {
   return name ? name[0].toUpperCase() : '?';
 }
@@ -434,7 +901,6 @@ function formatTime(ts) {
 // 云端数据操作
 // ═════════════════════════════════════════════════════════════
 
-// 从云端获取数据
 async function fetchCloudData() {
   try {
     showSyncStatus('syncing', '同步中...');
@@ -455,10 +921,8 @@ async function fetchCloudData() {
   }
 }
 
-// 保存数据到云端（带重试）
 async function saveCloudData(data, retry = 0) {
   if (isSyncing) {
-    // 如果正在同步，等待后重试
     await new Promise(r => setTimeout(r, 500));
     return saveCloudData(data, retry);
   }
@@ -467,14 +931,10 @@ async function saveCloudData(data, retry = 0) {
   showSyncStatus('syncing', '保存中...');
   
   try {
-    // 先获取最新数据，避免覆盖其他人的更新
     const latest = await fetchCloudData();
-    
-    // 合并数据：保留云端已有的帖子，添加本地新帖子
     const localPosts = data.posts || [];
     const cloudPosts = latest.posts || [];
     
-    // 合并帖子（按 ID 去重，保留最新的）
     const postMap = new Map();
     [...cloudPosts, ...localPosts].forEach(p => {
       const existing = postMap.get(p.id);
@@ -483,7 +943,6 @@ async function saveCloudData(data, retry = 0) {
       }
     });
     
-    // 合并老师列表
     const allTeachers = [...new Set([...(latest.teachers || []), ...(data.teachers || [])])];
     
     const mergedData = {
@@ -491,7 +950,6 @@ async function saveCloudData(data, retry = 0) {
       teachers: allTeachers
     };
     
-    // 保存到云端
     const res = await fetch(`${CONFIG.BASE_URL}/${CONFIG.BIN_ID}`, {
       method: 'PUT',
       headers: {
@@ -553,7 +1011,6 @@ async function doLogin() {
 function doLogout() {
   if (!confirm('确定退出登录吗？')) return;
   saveUser('');
-  // 停止轮询
   if (window.pollInterval) clearInterval(window.pollInterval);
   document.getElementById('app-page').style.display = 'none';
   document.getElementById('login-page').style.display = 'flex';
@@ -563,7 +1020,7 @@ function doLogout() {
 function shake(id) {
   const el = document.getElementById(id);
   el.style.animation = 'none';
-  el.style.borderColor = '#f44';
+  el.style.borderColor = '#e74c3c';
   setTimeout(() => el.style.borderColor = '', 800);
 }
 
@@ -573,33 +1030,25 @@ function shake(id) {
 
 async function enterApp(name) {
   showLoading(true);
-  
-  // 先加载云端数据
   await fetchCloudData();
   
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app-page').style.display = 'block';
   
-  // 顶栏头像
   const av = document.getElementById('topbar-avatar');
   av.textContent = initials(name);
   av.style.background = colorOf(name);
   document.getElementById('topbar-username').textContent = name;
   
-  // 发帖头像
   const cav = document.getElementById('compose-avatar');
   cav.textContent = initials(name);
   cav.style.background = colorOf(name);
   
-  // 填充老师列表
   refreshTeacherSelect();
-  
-  // 渲染帖子
   renderFeed();
   
   showLoading(false);
   
-  // 启动轮询（每 5 秒刷新一次）
   if (window.pollInterval) clearInterval(window.pollInterval);
   window.pollInterval = setInterval(async () => {
     const oldCount = cacheData.posts.length;
@@ -702,7 +1151,7 @@ async function submitPost() {
 function renderFeed() {
   const feed = document.getElementById('feed');
   if (!cacheData.posts.length) {
-    feed.innerHTML = '<div class="empty-hint"><div class="big">🫙</div>还没有人发帖，成为第一个发帖的人吧！</div>';
+    feed.innerHTML = '<div class="empty-hint"><div class="big">🫙</div>还没有人发帖<br>成为第一个发帖的人吧！</div>';
     return;
   }
   feed.innerHTML = cacheData.posts.map(p => renderPost(p)).join('');
@@ -851,16 +1300,21 @@ function showToast(msg) {
     t = document.createElement('div');
     t.id = '__toast__';
     Object.assign(t.style, {
-      position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)',
-      background:'rgba(0,0,0,.75)', color:'#fff', padding:'8px 18px',
-      borderRadius:'20px', fontSize:'13px', zIndex:'999',
-      transition:'opacity .3s'
+      position:'fixed', bottom:'90px', left:'50%', transform:'translateX(-50%)',
+      background:'rgba(0,0,0,.8)', color:'#fff', padding:'12px 24px',
+      borderRadius:'24px', fontSize:'14px', zIndex:'999',
+      transition:'all .3s', backdropFilter:'blur(10px)'
     });
     document.body.appendChild(t);
   }
-  t.textContent = msg; t.style.opacity = '1';
+  t.textContent = msg; 
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.opacity = '0', 2000);
+  t._timer = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 2000);
 }
 
 function esc(s) {
@@ -878,7 +1332,6 @@ document.getElementById('username-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
 
-// 自动登录
 (async function init() {
   const user = getUser();
   if (user) await enterApp(user);
