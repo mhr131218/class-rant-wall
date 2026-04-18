@@ -346,6 +346,84 @@
       transform: none;
     }
 
+    /* 语音按钮 */
+    .voice-btn {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: #fff;
+      border: none; 
+      border-radius: 14px;
+      padding: 10px 18px; 
+      font-size: 15px; 
+      font-weight: 600;
+      cursor: pointer; 
+      transition: all .3s;
+      box-shadow: 0 6px 20px rgba(56,239,125,.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .voice-btn:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(56,239,125,.5);
+    }
+
+    .voice-btn.recording {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      box-shadow: 0 6px 20px rgba(235,51,73,.5);
+      animation: voicePulse 1s ease infinite;
+    }
+
+    @keyframes voicePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .voice-btn .mic-icon {
+      font-size: 18px;
+    }
+
+    .voice-btn.recording .mic-icon {
+      animation: micBounce .5s ease infinite;
+    }
+
+    @keyframes micBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    /* 评论区语音 */
+    .comment-voice-btn {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: #fff;
+      border: none; 
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+      cursor: pointer; 
+      transition: all .3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .comment-voice-btn:hover { 
+      transform: scale(1.1);
+    }
+
+    .comment-voice-btn.recording {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      animation: voicePulse 1s ease infinite;
+    }
+
+    /* 语音不支持提示 */
+    .voice-unsupported {
+      font-size: 12px;
+      color: #999;
+      padding: 8px 0;
+    }
+
     /* 老师标签 */
     .teacher-tag {
       display: inline-flex; 
@@ -809,7 +887,13 @@
         </select>
         <button class="add-teacher-btn" onclick="openAddTeacher()">＋ 添加老师</button>
       </div>
-      <button class="post-btn" id="post-btn" onclick="submitPost()">发布</button>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="voice-btn" id="post-voice-btn" onclick="togglePostVoice()">
+          <span class="mic-icon">🎤</span>
+          <span id="post-voice-text">语音</span>
+        </button>
+        <button class="post-btn" id="post-btn" onclick="submitPost()">发布</button>
+      </div>
     </div>
   </div>
 
@@ -1206,6 +1290,7 @@ function renderPost(p) {
     <div class="comment-input-row">
       <input id="ci-${p.id}" type="text" placeholder="说两句…" maxlength="200"
              onkeydown="if(event.key==='Enter')submitComment('${p.id}')" />
+      <button class="comment-voice-btn" id="cv-${p.id}" onclick="toggleCommentVoice('${p.id}')" title="语音输入">🎤</button>
       <button onclick="submitComment('${p.id}')">发送</button>
     </div>
   </div>
@@ -1291,10 +1376,203 @@ function sharePost(pid) {
 }
 
 // ═════════════════════════════════════════════════════════════
-// 工具函数
+// 语音识别
 // ═════════════════════════════════════════════════════════════
 
-function showToast(msg) {
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let postRecognition = null;
+let commentRecognition = null;
+let currentCommentId = null;
+
+function isSpeechSupported() {
+  return !!SpeechRecognition;
+}
+
+function initPostRecognition() {
+  if (!isSpeechSupported()) return null;
+  
+  const recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'zh-CN';
+  
+  recognition.onresult = (event) => {
+    let finalTranscript = '';
+    let interimTranscript = '';
+    
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+    
+    const textarea = document.getElementById('compose-text');
+    if (finalTranscript) {
+      textarea.value += finalTranscript;
+    }
+    // 显示实时识别结果
+    if (interimTranscript) {
+      textarea.placeholder = interimTranscript;
+    } else {
+      textarea.placeholder = '今天被哪位老师整了？吐槽一下吧 💬';
+    }
+  };
+  
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+      showToast('语音识别出错: ' + event.error);
+    }
+    stopPostVoice();
+  };
+  
+  recognition.onend = () => {
+    // 如果还在录音状态，自动重启
+    if (document.getElementById('post-voice-btn').classList.contains('recording')) {
+      try {
+        recognition.start();
+      } catch (e) {
+        stopPostVoice();
+      }
+    }
+  };
+  
+  return recognition;
+}
+
+function togglePostVoice() {
+  const btn = document.getElementById('post-voice-btn');
+  const textEl = document.getElementById('post-voice-text');
+  const textarea = document.getElementById('compose-text');
+  
+  if (!isSpeechSupported()) {
+    showToast('您的浏览器不支持语音识别，请使用 Chrome 或 Edge 浏览器');
+    return;
+  }
+  
+  if (btn.classList.contains('recording')) {
+    stopPostVoice();
+  } else {
+    // 开始录音
+    if (!postRecognition) {
+      postRecognition = initPostRecognition();
+    }
+    
+    try {
+      postRecognition.start();
+      btn.classList.add('recording');
+      textEl.textContent = '停止';
+      textarea.placeholder = '正在听你说…';
+      showToast('开始语音输入，说完点击"停止"');
+    } catch (e) {
+      showToast('启动语音失败，请刷新页面重试');
+    }
+  }
+}
+
+function stopPostVoice() {
+  const btn = document.getElementById('post-voice-btn');
+  const textEl = document.getElementById('post-voice-text');
+  const textarea = document.getElementById('compose-text');
+  
+  if (postRecognition) {
+    try {
+      postRecognition.stop();
+    } catch (e) {}
+  }
+  
+  btn.classList.remove('recording');
+  textEl.textContent = '语音';
+  textarea.placeholder = '今天被哪位老师整了？吐槽一下吧 💬';
+}
+
+function toggleCommentVoice(postId) {
+  const btn = document.getElementById('cv-' + postId);
+  const input = document.getElementById('ci-' + postId);
+  
+  if (!isSpeechSupported()) {
+    showToast('您的浏览器不支持语音识别，请使用 Chrome 或 Edge 浏览器');
+    return;
+  }
+  
+  if (btn.classList.contains('recording')) {
+    stopCommentVoice();
+  } else {
+    // 先停止其他录音
+    if (commentRecognition) {
+      stopCommentVoice();
+    }
+    
+    // 创建新的识别实例
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'zh-CN';
+    currentCommentId = postId;
+    
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        }
+      }
+      
+      if (finalTranscript) {
+        input.value += finalTranscript;
+      }
+    };
+    
+    recognition.onerror = (event) => {
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        showToast('语音识别出错');
+      }
+      stopCommentVoice();
+    };
+    
+    recognition.onend = () => {
+      if (btn.classList.contains('recording')) {
+        try {
+          recognition.start();
+        } catch (e) {
+          stopCommentVoice();
+        }
+      }
+    };
+    
+    commentRecognition = recognition;
+    
+    try {
+      recognition.start();
+      btn.classList.add('recording');
+      input.placeholder = '正在听你说…';
+      showToast('开始语音输入');
+    } catch (e) {
+      showToast('启动语音失败');
+    }
+  }
+}
+
+function stopCommentVoice() {
+  const btn = document.getElementById('cv-' + currentCommentId);
+  const input = document.getElementById('ci-' + currentCommentId);
+  
+  if (commentRecognition) {
+    try {
+      commentRecognition.stop();
+    } catch (e) {}
+    commentRecognition = null;
+  }
+  
+  if (btn) btn.classList.remove('recording');
+  if (input) input.placeholder = '说两句…';
+  currentCommentId = null;
+}
   let t = document.getElementById('__toast__');
   if (!t) {
     t = document.createElement('div');
