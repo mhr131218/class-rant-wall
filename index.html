@@ -1573,6 +1573,12 @@ function stopCommentVoice() {
   if (input) input.placeholder = '说两句…';
   currentCommentId = null;
 }
+
+// ═════════════════════════════════════════════════════════════
+// 工具函数
+// ═════════════════════════════════════════════════════════════
+
+function showToast(msg) {
   let t = document.getElementById('__toast__');
   if (!t) {
     t = document.createElement('div');
